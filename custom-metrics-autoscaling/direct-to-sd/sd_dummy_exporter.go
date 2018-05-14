@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	gce "cloud.google.com/go/compute/metadata"
+	"github.com/go-redis/redis"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -53,13 +54,28 @@ func main() {
 
 	labels := getResourceLabels(*podId)
 	for {
+		client := redis.NewClient(&redis.Options{
+			Addr:     "redis-queue-master.general:6379",
+			Password: "", // no password set
+			DB:       0,  // use default DB
+		})
+
+		val, queueErr := client.LLen("santacruz").Result()
+		if queueErr != nil {
+			log.Printf("Error santacruz queue length: %v", queueErr)
+		} else {
+			*metricValue = val
+		}
+
 		err := exportMetric(stackdriverService, *metricName, *metricValue, labels)
+
 		if err != nil {
 			log.Printf("Failed to write time series data: %v\n", err)
 		} else {
 			log.Printf("Finished writing time series with value: %v\n", metricValue)
 		}
-		time.Sleep(5000 * time.Millisecond)
+
+		time.Sleep(30000 * time.Millisecond)
 	}
 }
 
