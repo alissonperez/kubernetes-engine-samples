@@ -41,6 +41,7 @@ func main() {
 	podId := flag.String("pod-id", "", "pod id")
 	metricName := flag.String("metric-name", "foo", "custom metric name")
 	metricValue := flag.Int64("metric-value", 0, "custom metric value")
+	queueName := flag.Int64("queue-value", 0, "queue metric value")
 	flag.Parse()
 
 	if *podId == "" {
@@ -60,9 +61,9 @@ func main() {
 			DB:       0,  // use default DB
 		})
 
-		val, queueErr := client.LLen("santacruz").Result()
+		val, queueErr := client.LLen(queueName).Result()
 		if queueErr != nil {
-			log.Printf("Error santacruz queue length: %v", queueErr)
+			log.Printf("Error queue (%v) length: %v", queueName, queueErr)
 		} else {
 			*metricValue = val
 		}
